@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function Admin() {
   const [form, setForm] = useState({
     senderName: "",
-    senderLocation: "",
+    senderLocation: "Jordan",
     senderEmail: "",
     receiverName: "",
     receiverAddress: "",
