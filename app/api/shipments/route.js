@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req) {
   try {
     const body = await req.json();
 
-    const db = await createClient();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
 
     const year = new Date().getFullYear();
 
-    const { count, error: countError } = await db
+    const { count, error: countError } = await supabase
       .from("shipments")
       .select("*", { count: "exact", head: true });
 
@@ -22,7 +25,7 @@ export async function POST(req) {
 
     const tracking = `RSS-${year}-${String((count || 0) + 1).padStart(6, "0")}`;
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from("shipments")
       .insert({
         ...body,
@@ -39,10 +42,10 @@ export async function POST(req) {
       );
     }
 
-    await db.from("shipment_events").insert({
+    await supabase.from("shipment_events").insert({
       shipment_id: data.id,
       status: data.status,
-      location: data.current_location || data.origin,
+      location: data.current_location || data.origin || "",
       note: "Shipment created",
     });
 
