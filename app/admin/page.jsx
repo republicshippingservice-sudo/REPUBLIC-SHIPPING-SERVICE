@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function Admin() {
   const [form, setForm] = useState({
     senderName: "",
-    senderLocation: "Jordan",
+    senderLocation: "",
     senderEmail: "",
     receiverName: "",
     receiverAddress: "",
@@ -31,58 +31,33 @@ export default function Admin() {
     });
   }
 
-  async function handleSubmit(e) {
+  async function registerParcel(e) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
 
-    const trackingNumber =
-      "RSS-" + Math.floor(10000000 + Math.random() * 90000000);
-
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/shipments`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            tracking_number: trackingNumber,
-            sender_name: form.senderName,
-            sender_location: form.senderLocation,
-            sender_email: form.senderEmail,
-            receiver_name: form.receiverName,
-            receiver_address: form.receiverAddress,
-            receiver_email: form.receiverEmail,
-            receiver_phone: form.receiverPhone,
-            receiver_country: form.receiverCountry,
-            parcel_description: form.parcelDescription,
-            weight: form.weight,
-            departure_date: form.departureDate || null,
-            departure_time: form.departureTime || null,
-            arrival_date: form.arrivalDate || null,
-            arrival_time: form.arrivalTime || null,
-            amount_paid: form.amountPaid,
-          }),
-        }
-      );
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const result = await response.json();
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
+        throw new Error(result.error || "Could not register the parcel.");
       }
 
       setMessage(
-        `Parcel registered successfully. Tracking Number: ${trackingNumber}`
+        `Parcel registered successfully! Tracking Number: ${result.tracking_number}`
       );
 
       setForm({
         senderName: "",
-        senderLocation: "Jordan",
+        senderLocation: "",
         senderEmail: "",
         receiverName: "",
         receiverAddress: "",
@@ -98,7 +73,7 @@ export default function Admin() {
         amountPaid: "",
       });
     } catch (error) {
-      setMessage("Error: Could not register the parcel.");
+      setMessage(`Error: ${error.message}`);
     }
 
     setLoading(false);
@@ -114,7 +89,7 @@ export default function Admin() {
     ["receiverPhone", "Receiver Phone", "tel"],
     ["receiverCountry", "Receiver Country", "text"],
     ["parcelDescription", "Parcel Description", "text"],
-    ["weight", "Parcel Weight", "text"],
+    ["weight", "Parcel Weight (kg)", "number"],
     ["departureDate", "Departure Date", "date"],
     ["departureTime", "Departure Time", "time"],
     ["arrivalDate", "Arrival Date", "date"],
@@ -123,96 +98,139 @@ export default function Admin() {
   ];
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f4f4f4",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          background: "white",
-          padding: "30px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1 style={{ marginBottom: "8px" }}>
-          Republic Shipping Service
-        </h1>
+    <main style={styles.page}>
+      <div style={styles.container}>
+        <h1 style={styles.title}>Republic Shipping Service</h1>
+        <h2 style={styles.heading}>Parcel Registration</h2>
 
-        <h2>Admin Dashboard</h2>
-
-        <p style={{ color: "#666" }}>Parcel Registration</p>
-
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={registerParcel} style={styles.form}>
           {fields.map(([name, label, type]) => (
-            <div key={name} style={{ marginBottom: "16px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "6px",
-                  fontWeight: "bold",
-                }}
-              >
-                {label}
-              </label>
+            <div key={name} style={styles.field}>
+              <label style={styles.label}>{label}</label>
 
-              <input
-                name={name}
-                type={type}
-                value={form[name]}
-                onChange={handleChange}
-                required={name !== "senderLocation"}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  fontSize: "16px",
-                  boxSizing: "border-box",
-                }}
-              />
+              {name === "receiverAddress" ||
+              name === "parcelDescription" ? (
+                <textarea
+                  name={name}
+                  value={form[name]}
+                  onChange={handleChange}
+                  required
+                  style={styles.input}
+                  rows={3}
+                />
+              ) : (
+                <input
+                  name={name}
+                  type={type}
+                  value={form[name]}
+                  onChange={handleChange}
+                  required
+                  step={type === "number" ? "0.01" : undefined}
+                  style={styles.input}
+                />
+              )}
             </div>
           ))}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "14px",
-              background: "#111827",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "17px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
+          <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "Registering..." : "Register Parcel"}
           </button>
-        </form>
 
-        {message && (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "15px",
-              background: "#e8f5e9",
-              borderRadius: "6px",
-              fontWeight: "bold",
-            }}
-          >
-            {message}
-          </div>
-        )}
+          {message && (
+            <div
+              style={
+                message.startsWith("Error")
+                  ? styles.error
+                  : styles.success
+              }
+            >
+              {message}
+            </div>
+          )}
+        </form>
       </div>
     </main>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#f5f7fa",
+    padding: "30px 16px",
+  },
+
+  container: {
+    maxWidth: "600px",
+    margin: "0 auto",
+    background: "#ffffff",
+    padding: "24px",
+    borderRadius: "14px",
+    boxShadow: "0 2px 15px rgba(0,0,0,0.08)",
+  },
+
+  title: {
+    marginTop: 0,
+    marginBottom: "8px",
+    fontSize: "30px",
+  },
+
+  heading: {
+    marginTop: 0,
+    marginBottom: "25px",
+    fontSize: "24px",
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  },
+
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+  },
+
+  label: {
+    fontWeight: "700",
+    fontSize: "16px",
+  },
+
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "13px",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    fontSize: "16px",
+  },
+
+  button: {
+    padding: "15px",
+    background: "#111827",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "18px",
+    fontWeight: "700",
+    cursor: "pointer",
+  },
+
+  success: {
+    padding: "14px",
+    background: "#e8f5e9",
+    color: "#166534",
+    borderRadius: "8px",
+    fontWeight: "600",
+  },
+
+  error: {
+    padding: "14px",
+    background: "#fee2e2",
+    color: "#991b1b",
+    borderRadius: "8px",
+    fontWeight: "600",
+  },
+};
