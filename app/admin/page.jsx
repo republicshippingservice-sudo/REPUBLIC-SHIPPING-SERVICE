@@ -156,4 +156,63 @@ export default function Admin() {
                 style={{
                   display: "block",
                   marginBottom: "6px",
-                  fontWeight
+                  fontWeight: "bold",
+                }}
+              >
+                {label}
+              </label>
+
+              <input
+                name={name}
+                type={type}
+                value={form[name]}
+                onChange={handleChange}
+                required={name !== "senderLocation"}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontSize: "16px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          ))}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: "#111827",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "17px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            {loading ? "Registering..." : "Register Parcel"}
+          </button>
+        </form>
+
+        {message && (
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "15px",
+              background: "#e8f5e9",
+              borderRadius: "6px",
+              fontWeight: "bold",
+            }}
+          >
+            {message}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
