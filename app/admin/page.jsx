@@ -31,9 +31,16 @@ export default function Admin() {
   }
 
   function handleSubmit(e) {
-    e.preventDefault();
-    setMessage("Parcel registration submitted successfully.");
-  }
+  e.preventDefault();
+
+  const trackingNumber =
+    "RSS-" + Math.floor(10000000 + Math.random() * 90000000);
+
+  setMessage(
+    "Parcel registration submitted successfully. Tracking Number: " +
+      trackingNumber
+  );
+}
 
   return (
     <main
