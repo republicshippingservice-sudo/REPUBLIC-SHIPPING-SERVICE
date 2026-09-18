@@ -1,204 +1,236 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-);
 
 export default function Home() {
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [shipment, setShipment] = useState(null);
-  const [events, setEvents] = useState([]);
+  const [form, setForm] = useState({
+    sender_name: "",
+    sender_location: "",
+    sender_email: "",
+    sender_phone: "",
+    receiver_name: "",
+    receiver_address: "",
+    receiver_email: "",
+    receiver_phone: "",
+    receiver_country: "",
+    parcel_description: "",
+    weight: "1",
+    departure_date: "",
+    departure_time: "",
+    arrival_date: "",
+    arrival_time: "",
+    amount_paid: "",
+  });
+
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState("");
 
-  async function trackShipment(e) {
+  function handleChange(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
-
-    const number = trackingNumber.trim();
-
-    if (!number) {
-      setMessage("Please enter your tracking number.");
-      setShipment(null);
-      setEvents([]);
-      return;
-    }
 
     setLoading(true);
     setMessage("");
-    setShipment(null);
-    setEvents([]);
+    setTrackingNumber("");
 
-    const { data, error } = await supabase
-      .from("shipments")
-      .select("*")
-      .eq("tracking_number", number)
-      .maybeSingle();
+    try {
+      const response = await fetch("/api/shipments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
-    if (error) {
-      setMessage("Unable to check tracking right now.");
-      setLoading(false);
-      return;
+      const text = await response.text();
+
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          "The server returned an invalid response. Please try again."
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not register parcel.");
+      }
+
+      setTrackingNumber(data.tracking_number);
+      setMessage("Parcel registered successfully!");
+
+      setForm({
+        sender_name: "",
+        sender_location: "",
+        sender_email: "",
+        sender_phone: "",
+        receiver_name: "",
+        receiver_address: "",
+        receiver_email: "",
+        receiver_phone: "",
+        receiver_country: "",
+        parcel_description: "",
+        weight: "1",
+        departure_date: "",
+        departure_time: "",
+        arrival_date: "",
+        arrival_time: "",
+        amount_paid: "",
+      });
+    } catch (error) {
+      setMessage("Error: " + error.message);
     }
 
-    if (!data) {
-      setMessage("Tracking number not found.");
-      setLoading(false);
-      return;
-    }
-
-    setShipment(data);
-
-    const { data: eventData } = await supabase
-      .from("shipment_events")
-      .select("*")
-      .eq("shipment_id", data.id)
-      .order("created_at", { ascending: false });
-
-    setEvents(eventData || []);
     setLoading(false);
   }
 
+  const fields = [
+    ["sender_name", "Sender Name", "text"],
+    ["sender_location", "Sender Location", "text"],
+    ["sender_email", "Sender Email", "email"],
+    ["sender_phone", "Sender Phone", "tel"],
+    ["receiver_name", "Receiver Name", "text"],
+    ["receiver_address", "Receiver Address", "text"],
+    ["receiver_email", "Receiver Email", "email"],
+    ["receiver_phone", "Receiver Phone", "tel"],
+    ["receiver_country", "Receiver Country", "text"],
+    ["parcel_description", "Parcel Description", "text"],
+    ["weight", "Parcel Weight (kg)", "number"],
+    ["departure_date", "Departure Date", "date"],
+    ["departure_time", "Departure Time", "time"],
+    ["arrival_date", "Arrival Date", "date"],
+    ["arrival_time", "Arrival Time", "time"],
+    ["amount_paid", "Amount Paid", "number"],
+  ];
+
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-      <header style={{ textAlign: "center", marginBottom: 40 }}>
-        <h1>REPUBLIC SHIPPING SERVICE</h1>
-        <p>FAST • SAFE • TRACKABLE</p>
-        <p>
-          Reliable international shipping and logistics services connecting
-          people and businesses around the world.
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#f4f6f8",
+        padding: "30px 15px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "650px",
+          margin: "0 auto",
+          background: "white",
+          padding: "30px",
+          borderRadius: "18px",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+        }}
+      >
+        <h1
+          style={{
+            textAlign: "center",
+            fontSize: "32px",
+            marginBottom: "10px",
+          }}
+        >
+          Republic Shipping Service
+        </h1>
+
+        <p
+          style={{
+            textAlign: "center",
+            color: "#666",
+            marginBottom: "30px",
+          }}
+        >
+          Register and track your parcel
         </p>
-      </header>
 
-      <section style={{ marginBottom: 40 }}>
-        <h2>About Republic Shipping Service</h2>
-        <p>
-          Republic Shipping Service provides international shipping,
-          transportation and shipment tracking services for customers
-          worldwide.
-        </p>
-      </section>
+        <form onSubmit={handleSubmit}>
+          {fields.map(([name, label, type]) => (
+            <div key={name} style={{ marginBottom: "18px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontWeight: "bold",
+                  marginBottom: "7px",
+                }}
+              >
+                {label}
+              </label>
 
-      <section style={{ marginBottom: 40 }}>
-        <h2>Our Services</h2>
-        <ul>
-          <li>International Shipping</li>
-          <li>Parcel Shipping</li>
-          <li>Goods Transportation</li>
-          <li>Shipment Tracking</li>
-          <li>Worldwide Delivery</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Track Your Shipment</h2>
-
-        <form onSubmit={trackShipment}>
-          <input
-            type="text"
-            value={trackingNumber}
-            onChange={(e) => setTrackingNumber(e.target.value)}
-            placeholder="RSS-2026-000001"
-            required
-            style={{
-              width: "100%",
-              padding: 14,
-              marginBottom: 12,
-              boxSizing: "border-box",
-            }}
-          />
+              <input
+                name={name}
+                type={type}
+                value={form[name]}
+                onChange={handleChange}
+                required
+                min={type === "number" ? "0" : undefined}
+                step={name === "weight" ? "0.01" : undefined}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  fontSize: "16px",
+                  border: "1px solid #ccc",
+                  borderRadius: "10px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          ))}
 
           <button
             type="submit"
             disabled={loading}
             style={{
               width: "100%",
-              padding: 14,
-              cursor: loading ? "wait" : "pointer",
+              padding: "16px",
+              background: "#111827",
+              color: "white",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "18px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              marginTop: "10px",
             }}
           >
-            {loading ? "Checking..." : "Track Shipment"}
+            {loading ? "Registering..." : "Register Parcel"}
           </button>
         </form>
 
         {message && (
-          <p style={{ marginTop: 20, fontWeight: "bold" }}>{message}</p>
-        )}
+          <div
+            style={{
+              marginTop: "25px",
+              padding: "18px",
+              borderRadius: "10px",
+              background: trackingNumber ? "#dcfce7" : "#fee2e2",
+              color: trackingNumber ? "#166534" : "#991b1b",
+              fontWeight: "bold",
+            }}
+          >
+            {message}
 
-        {shipment && (
-          <div style={{ marginTop: 30 }}>
-            <h3>Shipment Details</h3>
-
-            <p>
-              <strong>Tracking Number:</strong> {shipment.tracking_number}
-            </p>
-
-            <p>
-              <strong>Status:</strong> {shipment.status}
-            </p>
-
-            <p>
-              <strong>Current Location:</strong>{" "}
-              {shipment.current_location || "Not available"}
-            </p>
-
-            <p>
-              <strong>Origin:</strong> {shipment.origin}
-            </p>
-
-            <p>
-              <strong>Destination:</strong> {shipment.destination}
-            </p>
-
-            <p>
-              <strong>Package:</strong>{" "}
-              {shipment.package_description || "Not available"}
-            </p>
-
-            <p>
-              <strong>Estimated Delivery:</strong>{" "}
-              {shipment.estimated_delivery || "Not available"}
-            </p>
-
-            {events.length > 0 && (
-              <>
-                <h3 style={{ marginTop: 30 }}>Shipment History</h3>
-
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    style={{
-                      padding: 15,
-                      marginBottom: 10,
-                      border: "1px solid #ccc",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <strong>{event.status}</strong>
-
-                    {event.location && (
-                      <p>Location: {event.location}</p>
-                    )}
-
-                    {event.note && <p>{event.note}</p>}
-
-                    <small>
-                      {new Date(event.created_at).toLocaleString()}
-                    </small>
-                  </div>
-                ))}
-              </>
+            {trackingNumber && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  fontSize: "24px",
+                }}
+              >
+                Tracking Number:
+                <br />
+                {trackingNumber}
+              </div>
             )}
           </div>
         )}
-      </section>
-
-      <footer style={{ marginTop: 50, textAlign: "center" }}>
-        <p>© Republic Shipping Service</p>
-      </footer>
+      </div>
     </main>
   );
 }
